@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>UNRAVEL</title>
+    <link href="https://fonts.googleapis.com/css2?family=Tenor+Sans&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root { --bg: #f4f4f2; --card-bg: #ffffff; --text: #4a4a4a; --accent: #e06a6a; --border: #e2e2e2; }
+        [data-theme="dark"] { --bg: #262626; --card-bg: #333333; --text: #cccccc; --accent: #ff9999; --border: #4a4a4a; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; }
+        
+        header { 
+            background: var(--card-bg); 
+            padding: 10px 40px; 
+            display: grid; /* Switched from flex to grid */
+            grid-template-columns: 1fr auto 1fr; /* Left, Center, Right */
+            align-items: center; 
+            border-bottom: 1px solid var(--border); 
+            position: sticky; 
+            top: 0; 
+            z-index: 100; 
+        }
+
+        .logo { 
+            font-family: 'Tenor Sans', sans-serif; 
+            font-size: 2rem; 
+            color: var(--accent); 
+            letter-spacing: 4px; 
+            font-weight: 400; 
+            justify-self: start; /* Pin logo to the left */
+        }
+        
+        .search-group { 
+            display: flex; 
+            gap: 15px; 
+            justify-content: center; 
+            align-items: center; 
+        }
+
+        .secondary-btn {
+            background: transparent;
+            color: var(--text);
+            border: 1px solid var(--border);
+            padding: 12px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 11px;
+            transition: all 0.2s ease;
+        }
+
+        .secondary-btn:hover {
+            background: var(--bg);
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+                
+        /* Add this to create a balanced spacer on the right */
+        header::after {
+            content: "";
+            width: 100%;
+        }
+
+        .nav-links { display: flex; align-items: center; gap: 30px; }
+
+        .nav-btn {
+            background: none;
+            border: none;
+            color: var(--text);
+            font-size: 13px;
+            font-weight: 500;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            cursor: pointer;
+            opacity: 0.6;
+            transition: all 0.2s;
+            /* Add this line: */
+            border-bottom: 2px solid transparent; 
+        }
+
+        .nav-btn:hover, .nav-btn.active {
+            opacity: 1;
+            color: var(--accent);
+            /* Now this just changes the color, not the layout size */
+            border-bottom-color: var(--accent); 
+        }
+
+        /* Autocomplete Styles */
+        .autocomplete-wrapper { position: relative; width: 350px; }
+        input { padding: 12px 20px; border-radius: 20px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-family: 'Inter'; font-size: 14px; width: 100%; box-sizing: border-box; outline: none; }
+        .dropdown-list { position: absolute; top: 100%; left: 0; right: 0; background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; margin-top: 8px; list-style: none; padding: 0; max-height: 250px; overflow-y: auto; z-index: 1000; box-shadow: 0 4px 12px rgba(0,0,0,0.1); display: none; }
+        .dropdown-list li { padding: 12px 15px; cursor: pointer; border-bottom: 1px solid var(--border); text-align: left; }
+        .dropdown-list li:last-child { border-bottom: none; }
+        .dropdown-list li:hover { background: var(--bg); }
+        .dropdown-name { font-weight: 600; display: block; font-size: 13px; }
+        .dropdown-designer { font-size: 11px; opacity: 0.6; margin-top: 2px; display: block; text-transform: uppercase; letter-spacing: 0.5px;}
+
+        button:focus, input:focus { outline: none; }
+        button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+        input:focus:not(:focus-visible) { border-color: var(--accent); }
+        
+        button { padding: 12px 30px; background: var(--accent); color: white; border: none; border-radius: 20px; cursor: pointer; font-weight: 600; text-transform: uppercase; font-size: 12px; transition: transform 0.2s ease, filter 0.2s ease;}
+        button:hover { transform: translateY(-2px); filter: brightness(1.05); }
+        button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+        
+        .container { position: relative; padding: 10px 40px; text-align: center; }
+        .grid { 
+            display: grid; 
+            grid-template-columns: repeat(4, 1fr); 
+            gap: 20px; 
+            max-width: 1400px; 
+            margin: 0 auto;
+            /* This ensures hidden cards don't leave "ghost" spaces */
+            grid-auto-flow: dense; 
+        }
+        .card { display: block; }
+        .card[style*="display: none"] { display: none !important; }
+        .card:nth-child(n+9) {display: none;}
+        .card { background: var(--card-bg); border-radius: 12px; overflow: hidden; border: 1px solid var(--border); }
+        .card img { width: 100%; aspect-ratio: 1/1; object-fit: cover; display: block; cursor: pointer; transition: opacity 0.2s;}
+        .card img:hover { opacity: 0.9; }
+        .card-info { padding: 15px; font-weight: 600; font-size: 0.85rem; }
+        .card-info a { text-decoration: none; color: inherit; }
+        #status { 
+            position: fixed;
+            bottom: 30px;      /* Matches theme button */
+            right: 85px;       /* button width (45px) + button right (30px) + 10px gap */
+            height: 45px;      /* Matches theme button height */
+            display: flex;
+            align-items: center;
+            font-weight: 500; 
+            color: var(--text); 
+            opacity: 0.8;
+            font-size: 12px; 
+            letter-spacing: 1px;
+            z-index: 1000;     /* Keeps it on the same layer as the button */
+            pointer-events: none; /* Allows you to click things "under" the text if needed */
+        }
+        .grid { margin-top: 10px; }
+
+        .theme-btn { position: fixed; bottom: 30px; right: 30px; width: 45px; height: 45px; background: var(--card-bg); border: 1px solid var(--border); border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--text); box-shadow: 0 4px 12px rgba(0,0,0,0.08); transition: all 0.2s ease; z-index: 1000; padding: 0; }
+        .theme-btn:hover { border-color: var(--accent); color: var(--accent); transform: translateY(-2px); }
+        .sun-icon { display: block; } .moon-icon { display: none; }
+        [data-theme="dark"] .sun-icon { display: none; } [data-theme="dark"] .moon-icon { display: block; }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo">UNRAVEL</div>
+        <div class="nav-links">
+            <div class="autocomplete-wrapper">
+                <input type="text" id="searchInput" placeholder="Search patterns..." autocomplete="off">
+                <ul id="dropdown" class="dropdown-list"></ul>
+            </div>
+            <button id="searchBtn" class="nav-btn" onclick="loadSweaters(false, 'search')">Search</button>
+            
+            <button onclick="changeMode('trending')" class="nav-btn">Trending</button>
+            <button onclick="changeMode('explore')" class="nav-btn">Explore</button>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="grid" id="sweaterGrid"></div>
+    </div>
+
+    <div id="status" aria-live="polite"></div>
+
+    <button id="themeBtn" class="theme-btn" aria-label="Toggle Dark Mode">
+        <svg class="sun-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+        <svg class="moon-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+    </button>
+
+    <script>
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        document.documentElement.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
+
+        let selectedPatternLink = null;
+        let timeout = null;
+        const searchInput = document.getElementById('searchInput');
+        const dropdown = document.getElementById('dropdown');
+        const searchBtn = document.getElementById('searchBtn');
+
+        // Typing triggers suggestions
+        searchInput.addEventListener('input', (e) => {
+            clearTimeout(timeout);
+            selectedPatternLink = null; // Invalidate selection if they type manually
+            searchBtn.disabled = e.target.value.trim().length > 0; // Disable search unless picked from list
+            
+            const query = e.target.value.trim();
+            if (!query) { dropdown.style.display = 'none'; searchBtn.disabled = false; return; }
+            
+            timeout = setTimeout(() => fetchSuggestions(query), 300);
+        });
+
+        async function fetchSuggestions(query) {
+            try {
+                const res = await fetch(`http://localhost:5000/pattern-search?q=${encodeURIComponent(query)}`);
+                const data = await res.json();
+                
+                if (data.length === 0) { dropdown.style.display = 'none'; return; }
+
+                dropdown.innerHTML = data.map(p => `
+                    <li onclick="selectPattern('${p.permalink}', '${p.name.replace(/'/g, "\\'")}')">
+                        <span class="dropdown-name">${p.name}</span>
+                        <span class="dropdown-designer">by ${p.designer}</span>
+                    </li>
+                `).join('');
+                dropdown.style.display = 'block';
+            } catch (err) { dropdown.style.display = 'none'; }
+        }
+
+        // Selection handler
+        window.selectPattern = function(permalink, name) {
+            selectedPatternLink = permalink;
+            searchInput.value = name;
+            dropdown.style.display = 'none';
+            searchBtn.disabled = false; // Re-enable button
+            loadSweaters(); // Auto-search on select
+        };
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.autocomplete-wrapper')) dropdown.style.display = 'none';
+        });
+
+        async function changeMode(mode) {
+            // Clear search data if switching to global modes
+            if (mode !== 'search') {
+                selectedPatternLink = null;
+                searchInput.value = "";
+            }
+            
+            // UI feedback: highlight active button
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.innerText.toLowerCase() === mode);
+            });
+
+            await loadSweaters(false, mode);
+        }
+
+        async function loadSweaters(isInitialLoad = false, mode = 'search') {
+            const grid = document.getElementById('sweaterGrid');
+            const status = document.getElementById('status');
+            
+            if (!isInitialLoad && searchInput.value.trim() && !selectedPatternLink) {
+                status.innerText = "PLEASE SELECT A PATTERN FROM THE LIST";
+                return;
+            }
+
+            status.innerText = isInitialLoad ? "DISCOVERING POPULAR PROJECTS..." : "SEARCHING RAVELRY...";
+            grid.style.opacity = "0.5";
+
+            try {
+                const res = await fetch(`http://localhost:5000/pattern-projects?pattern_link=${selectedPatternLink || ''}&mode=${mode}`);
+                const responseData = await res.json();
+                
+                grid.style.opacity = "1";
+
+                // Read the new object structure from the server
+                const data = responseData.projects || responseData;
+
+                if (data.length === 0) {
+                    status.innerText = "NO PROJECTS FOUND.";
+                    grid.innerHTML = "";
+                    return;
+                }
+
+                // Display the total cout in the status bar
+                // Only show the "8 OUT OF X" text if the user has actually picked a pattern
+                const totalText = (selectedPatternLink && responseData.total) 
+                    ? `8 / ${responseData.total.toLocaleString()}`
+                    : "";
+
+                status.innerText = totalText;
+
+                grid.innerHTML = data.map(p => `
+                    <div class="card">
+                        <a href="${p.link}" target="_blank">
+                            <img src="${p.image}" 
+                                alt="${p.projectName}" 
+                                onerror="handleImageError(this)">
+                        </a>
+                        <div class="card-info">
+                            <div class="project-title">${p.projectName}</div>
+                            <div class="user-tag">@${p.user}</div>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (err) {
+                status.innerText = " OFFLINE";
+            }
+        }
+
+        document.getElementById('searchBtn').onclick = () => loadSweaters(false, 'search');
+        document.getElementById('themeBtn').onclick = () => {
+            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+            document.documentElement.setAttribute('data-theme', isDark ? 'light' : 'dark');
+        };
+        
+        // Final line of the script:
+        searchInput.focus(); // Place the cursor in the search box automatically
+
+        window.handleImageError = function(img) {
+            const card = img.closest('.card');
+            if (card) {
+                card.remove(); // Removes the card completely so the grid reflows
+            }
+        };
+
+    </script>
+</body>
+</html>
