@@ -6,6 +6,12 @@ const axios = require('axios');
 const app = express();
 app.use(cors());
 
+const path = require('path');
+app.use(express.static(path.join(__dirname)));
+
+// Serve index.html at root
+app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
+
 // HELPER: Auth Headers
 const getAuthHeaders = () => {
     const authString = Buffer.from(`${process.env.RAVELRY_USER}:${process.env.RAVELRY_PASSWORD}`).toString('base64');
@@ -41,30 +47,23 @@ app.get('/pattern-search', async (req, res) => {
 app.get('/pattern-projects', async (req, res) => {
   try {
     const searchUrl = 'https://api.ravelry.com/projects/search.json';
-    const { pattern_link, mode } = req.query;
+    const { pattern_link } = req.query;
 
     const baseParams = { photo: 'yes' };
+    if (pattern_link) baseParams['pattern-link'] = pattern_link;
 
-    if (mode === 'trending') {
-        baseParams.sort = 'favorites'; 
-    } else if (mode === 'explore') {
-        baseParams.sort = 'random';
-    } else if (pattern_link) {
-        baseParams['pattern-link'] = pattern_link;
-    }
-
-    // Set batch size: Bigger buffer for "Explore" mode to avoid empty tiles
-    const batchSize = (mode === 'explore') ? 40 : 20;
+    const batchSize = 32;
 
     const countRes = await axios.get(searchUrl, { params: { ...baseParams, page_size: 1 }, headers: getAuthHeaders() });
     const totalResults = countRes.data.paginator.results;
 
     const maxPages = Math.min(Math.floor(totalResults / batchSize), 500);
-    const randomPage = Math.floor(Math.random() * (maxPages || 1)) + 1;
+    const requestedPage = req.query.page ? Math.max(1, Number(req.query.page)) : null;
+    const pageToFetch = requestedPage || (Math.floor(Math.random() * (maxPages || 1)) + 1);
 
     const response = await axios.get(searchUrl, { 
-        params: { ...baseParams, page_size: batchSize, page: randomPage }, 
-        headers: getAuthHeaders() 
+      params: { ...baseParams, page_size: batchSize, page: pageToFetch }, 
+      headers: getAuthHeaders() 
     });
 
     console.log(response.data.projects[0]);
@@ -86,11 +85,8 @@ app.get('/pattern-projects', async (req, res) => {
   }
 });
 
+
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on port ${PORT}`);
-
-const path = require('path');
-app.use(express.static(path.join(__dirname, 'public')));
-
 });

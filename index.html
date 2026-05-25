@@ -5,200 +5,566 @@
     <title>UNRAVEL</title>
     <link href="https://fonts.googleapis.com/css2?family=Tenor+Sans&family=Inter:wght@400;600&display=swap" rel="stylesheet">
     <style>
-        :root { --bg: #f4f4f2; --card-bg: #ffffff; --text: #4a4a4a; --accent: #e06a6a; --border: #e2e2e2; }
-        [data-theme="dark"] { --bg: #262626; --card-bg: #333333; --text: #cccccc; --accent: #ff9999; --border: #4a4a4a; }
-        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; }
-        
-        header { 
-            background: var(--card-bg); 
-            padding: 10px 40px; 
-            display: grid; /* Switched from flex to grid */
-            grid-template-columns: 1fr auto 1fr; /* Left, Center, Right */
-            align-items: center; 
-            border-bottom: 1px solid var(--border); 
-            position: sticky; 
-            top: 0; 
-            z-index: 100; 
+        :root {
+            color-scheme: light;
+            --bg: #f5f5f3;
+            --surface: #ffffff;
+            --surface-strong: #f7f7f8;
+            --text: #111827;
+            --muted: #54667a;
+            --accent: #EE6E62;
+            --border: #d8dde3;
+            --shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+            font-family: 'Inter', sans-serif;
         }
 
-        .logo { 
-            font-family: 'Tenor Sans', sans-serif; 
-            font-size: 2rem; 
-            color: var(--accent); 
-            letter-spacing: 4px; 
-            font-weight: 400; 
-            justify-self: start; /* Pin logo to the left */
-        }
-        
-        .search-group { 
-            display: flex; 
-            gap: 15px; 
-            justify-content: center; 
-            align-items: center; 
+        * {
+            box-sizing: border-box;
         }
 
-        .secondary-btn {
-            background: transparent;
-            color: var(--text);
-            border: 1px solid var(--border);
-            padding: 12px 20px;
-            border-radius: 20px;
-            cursor: pointer;
-            font-weight: 600;
-            text-transform: uppercase;
-            font-size: 11px;
-            transition: all 0.2s ease;
-        }
-
-        .secondary-btn:hover {
+        html {
             background: var(--bg);
-            border-color: var(--accent);
-            color: var(--accent);
-        }
-                
-        /* Add this to create a balanced spacer on the right */
-        header::after {
-            content: "";
-            width: 100%;
         }
 
-        .nav-links { display: flex; align-items: center; gap: 30px; }
-
-        .nav-btn {
-            background: none;
-            border: none;
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background: var(--bg);
             color: var(--text);
-            font-size: 13px;
-            font-weight: 500;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-            cursor: pointer;
-            opacity: 0.6;
-            transition: all 0.2s;
-            /* Add this line: */
-            border-bottom: 2px solid transparent; 
-        }
-
-        .nav-btn:hover, .nav-btn.active {
-            opacity: 1;
-            color: var(--accent);
-            /* Now this just changes the color, not the layout size */
-            border-bottom-color: var(--accent); 
-        }
-
-        /* Autocomplete Styles */
-        .autocomplete-wrapper { position: relative; width: 350px; }
-        input { padding: 12px 20px; border-radius: 20px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-family: 'Inter'; font-size: 14px; width: 100%; box-sizing: border-box; outline: none; }
-        .dropdown-list { position: absolute; top: 100%; left: 0; right: 0; background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; margin-top: 8px; list-style: none; padding: 0; max-height: 250px; overflow-y: auto; z-index: 1000; box-shadow: 0 4px 12px rgba(0,0,0,0.1); display: none; }
-        .dropdown-list li { padding: 12px 15px; cursor: pointer; border-bottom: 1px solid var(--border); text-align: left; }
-        .dropdown-list li:last-child { border-bottom: none; }
-        .dropdown-list li:hover { background: var(--bg); }
-        .dropdown-name { font-weight: 600; display: block; font-size: 13px; }
-        .dropdown-designer { font-size: 11px; opacity: 0.6; margin-top: 2px; display: block; text-transform: uppercase; letter-spacing: 0.5px;}
-
-        button:focus, input:focus { outline: none; }
-        button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
-        input:focus:not(:focus-visible) { border-color: var(--accent); }
-        
-        button { padding: 12px 30px; background: var(--accent); color: white; border: none; border-radius: 20px; cursor: pointer; font-weight: 600; text-transform: uppercase; font-size: 12px; transition: transform 0.2s ease, filter 0.2s ease;}
-        button:hover { transform: translateY(-2px); filter: brightness(1.05); }
-        button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
-        
-        .container { position: relative; padding: 10px 40px; text-align: center; }
-        .grid { 
-            display: grid; 
-            grid-template-columns: repeat(4, 1fr); 
-            gap: 20px; 
-            max-width: 1400px; 
-            margin: 0 auto;
-            /* This ensures hidden cards don't leave "ghost" spaces */
-            grid-auto-flow: dense; 
-        }
-        .card { display: block; }
-        .card[style*="display: none"] { display: none !important; }
-        .card:nth-child(n+9) {display: none;}
-        .card { background: var(--card-bg); border-radius: 12px; overflow: hidden; border: 1px solid var(--border); }
-        .card img { width: 100%; aspect-ratio: 1/1; object-fit: cover; display: block; cursor: pointer; transition: opacity 0.2s;}
-        .card img:hover { opacity: 0.9; }
-        .card-info { padding: 15px; font-weight: 600; font-size: 0.85rem; }
-        .card-info a { text-decoration: none; color: inherit; }
-        #status { 
-            position: fixed;
-            bottom: 30px;      /* Matches theme button */
-            right: 85px;       /* button width (45px) + button right (30px) + 10px gap */
-            height: 45px;      /* Matches theme button height */
+            font-family: inherit;
             display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
             align-items: center;
-            font-weight: 500; 
-            color: var(--text); 
-            opacity: 0.8;
-            font-size: 12px; 
-            letter-spacing: 1px;
-            z-index: 1000;     /* Keeps it on the same layer as the button */
-            pointer-events: none; /* Allows you to click things "under" the text if needed */
+            padding: 300px 24px 24px 24px;
+            text-align: center;
         }
-        .grid { margin-top: 10px; }
 
-        .theme-btn { position: fixed; bottom: 30px; right: 30px; width: 45px; height: 45px; background: var(--card-bg); border: 1px solid var(--border); border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--text); box-shadow: 0 4px 12px rgba(0,0,0,0.08); transition: all 0.2s ease; z-index: 1000; padding: 0; }
-        .theme-btn:hover { border-color: var(--accent); color: var(--accent); transform: translateY(-2px); }
-        .sun-icon { display: block; } .moon-icon { display: none; }
-        [data-theme="dark"] .sun-icon { display: none; } [data-theme="dark"] .moon-icon { display: block; }
+        body.search-active {
+            justify-content: flex-start;
+            padding: 0;
+            min-height: 100vh;
+        }
+
+        header {
+            display: grid;
+            justify-items: center;
+            align-items: center;
+            gap: 32px;
+            width: min(100%, 720px);
+            transition: background 0.4s ease, box-shadow 0.4s ease, padding 0.4s ease;
+            padding: 0;
+        }
+
+        body.search-active header {
+            display: grid;
+            grid-template-columns: 1fr minmax(360px, 560px) 1fr;
+            align-items: center;
+            justify-items: center;
+            position: sticky;
+            top: 0;
+            background: var(--bg);
+            z-index: 40;
+            width: 100%;
+            padding: 8px 14px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+            margin-bottom: 0;
+            gap: 10px;
+        }
+
+        body.search-active .logo {
+            font-size: 1.4rem;
+            justify-self: start;
+            grid-column: 1;
+        }
+
+        body.search-active .search-row {
+            grid-column: 2;
+            width: 100%;
+            max-width: 560px;
+            justify-self: center;
+            margin-top: 0;
+        }
+
+        body.search-active .theme-btn {
+            grid-column: 3;
+            justify-self: end;
+            grid-row: 1;
+        }
+
+        .logo {
+            font-family: 'Tenor Sans', sans-serif;
+            font-size: 3rem;
+            letter-spacing: 0.24em;
+            font-weight: 700;
+            margin: 0;
+        }
+
+        .logo .logo-highlight {
+            color: var(--accent);
+        }
+
+        body.search-active .logo {
+            font-size: 2rem;
+        }
+
+        main {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 0;
+        }
+
+        body.search-active main {
+            display: flex;
+            flex: 1;
+            flex-direction: column;
+            align-items: stretch;
+            justify-content: flex-start;
+            padding: 6px 16px 16px;
+            min-height: 0;
+            overflow: hidden;
+        }
+
+        .search-row {
+            width: 100%;
+            max-width: 620px;
+            display: flex;
+            justify-content: center;
+            margin-top: 0px;
+        }
+
+        .autocomplete-wrapper {
+            position: relative;
+            width: min(560px, 100%);
+        }
+
+        input {
+            width: 100%;
+            padding: 11px 56px 11px 14px;
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            background: var(--surface-strong);
+            color: var(--text);
+            font-size: 0.95rem;
+            outline: none;
+        }
+
+        input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 4px rgba(238, 110, 98, 0.08);
+        }
+
+        .search-btn {
+              position: absolute;
+              right: 8px;
+              top: 50%;
+              transform: translateY(-50%);
+              border: none;
+              border-radius: 14px;
+              background: transparent;
+              color: var(--text);
+              width: 38px;
+              height: 38px;
+              padding: 0;
+              display: grid;
+              place-items: center;
+              cursor: pointer;
+              box-shadow: none;
+              z-index: 20;
+              transition: background 0.2s ease, color 0.2s ease;
+        }
+
+        .search-btn:hover {
+            background: #EE6E62;
+            color: #fff;
+        }
+
+        .search-btn .refresh-icon {
+            display: none;
+            width: 18px;
+            height: 18px;
+            object-fit: contain;
+        }
+
+        body.search-active .search-btn .search-icon {
+            display: none;
+        }
+
+        body.search-active .search-btn .refresh-icon {
+            display: block;
+        }
+
+        .theme-btn:hover {
+            background: var(--surface-strong);
+            border-color: var(--accent);
+        }
+
+        .theme-btn {
+            position: fixed;
+            right: 24px;
+            bottom: 24px;
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            background: var(--surface);
+            width: 54px;
+            height: 54px;
+            display: grid;
+            place-items: center;
+            cursor: pointer;
+            z-index: 50;
+        }
+
+        .back-to-top {
+            position: fixed;
+            right: 24px;
+            bottom: 100px;
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            background: var(--surface);
+            width: 54px;
+            height: 54px;
+            display: grid;
+            place-items: center;
+            cursor: pointer;
+            z-index: 50;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .back-to-top.visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            grid-template-rows: repeat(2, 1fr);
+            gap: 6px;
+            width: calc(100vw - 200px);  /* wider — use most of viewport width */
+            height: calc(100vh - 80px);  /* full viewport height minus header */
+            margin: 0 auto;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        .tile {
+            position: relative;
+            overflow: hidden;
+            border-radius: 12px;
+            background: var(--surface-strong);
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            width: 100%;
+            height: 100%;  /* fill the grid row */
+            margin: 0;
+        }
+
+        .tile:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+        }
+
+        .tile img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .tile-info {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 12px;
+            background: linear-gradient(to top, rgba(0, 0, 0, 0.7), transparent);
+            color: white;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-align: left;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+
+        .tile:hover .tile-info {
+            opacity: 1;
+        }
+
+        .sun-icon,
+        .moon-icon {
+            display: none;
+        }
+
+        .moon-icon {
+            display: block;
+        }
+
+        html[data-theme="dark"] .sun-icon {
+            display: block;
+        }
+
+        html[data-theme="dark"] .moon-icon {
+            display: none;
+        }
+
+        .dropdown-list {
+            position: absolute;
+            top: calc(100% + 12px);
+            left: 0;
+            right: 0;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            list-style: none;
+            margin: 0;
+            padding: 6px 0;
+            box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+            display: none;
+            z-index: 100;
+            max-height: 60vh;
+            overflow: auto;
+        }
+
+        .dropdown-list li {
+            padding: 8px 14px;
+            cursor: pointer;
+            transition: background 0.12s ease;
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            white-space: nowrap;
+            overflow: hidden;
+        }
+
+        .dropdown-list li:hover {
+            background: rgba(15, 23, 42, 0.06);
+        }
+
+        .dropdown-name {
+            display: inline-block;
+            font-weight: 700;
+            margin: 0;
+            padding: 0;
+            line-height: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            flex: 1 1 auto;
+            text-align: left;
+            padding-right: 12px;
+        }
+
+        .dropdown-designer {
+            display: inline-block;
+            font-size: 0.78rem;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            opacity: 0.95;
+            flex: 0 0 auto;
+            text-align: right;
+            margin-left: 12px;
+        }
+
+        html[data-theme="dark"] {
+            color-scheme: dark;
+        }
+
+        html[data-theme="dark"] body {
+            background: #111827;
+            color: #f8fafc;
+        }
+
+        html[data-theme="dark"] body.search-active header {
+            background: #111827;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        html[data-theme="dark"] input {
+            background: #1f2937;
+            border-color: #374151;
+            color: #f8fafc;
+        }
+
+        html[data-theme="dark"] .search-btn {
+              background: transparent;
+              border-color: #374151;
+              color: #f8fafc;
+        }
+
+        html[data-theme="dark"] .search-btn:hover {
+            background: #EE6E62;
+            color: #fff;
+        }
+
+        html[data-theme="dark"] .theme-btn {
+            background: #111827;
+            border-color: #374151;
+        }
+
+        html[data-theme="dark"] .back-to-top {
+            background: #111827;
+            border-color: #374151;
+            color: #f8fafc;
+        }
+
+        html[data-theme="dark"] .dropdown-list {
+            background: #111827;
+            border-color: #374151;
+        }
+
+        html[data-theme="dark"] .dropdown-list li:hover {
+            background: #1f2937;
+        }
+
+        html[data-theme="dark"] .tile {
+            background: #1f2937;
+        }
+
+        @media (max-width: 720px) {
+            body {
+                padding: 18px;
+            }
+
+            body.search-active header {
+                padding: 16px 18px;
+            }
+
+            .logo {
+                font-size: 2rem;
+            }
+
+            body.search-active .logo {
+                font-size: 1.5rem;
+            }
+
+            body.search-active main {
+                padding: 24px 18px;
+            }
+
+            .grid-container {
+                grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+                row-gap: 8px;
+                column-gap: 15px;
+            }
+
+            .theme-btn {
+                width: 48px;
+                height: 48px;
+            }
+
+            .back-to-top {
+                width: 48px;
+                height: 48px;
+                bottom: 90px;
+            }
+        }
     </style>
 </head>
 <body>
     <header>
-        <div class="logo">UNRAVEL</div>
-        <div class="nav-links">
+        <div class="logo">UN<span class="logo-highlight">R</span>AVEL</div>
+        <button id="themeBtn" class="theme-btn" aria-label="Toggle Dark Mode">
+            <svg class="sun-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+            <svg class="moon-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+        </button>
+        <div class="search-row">
             <div class="autocomplete-wrapper">
                 <input type="text" id="searchInput" placeholder="Search patterns..." autocomplete="off">
+                <button id="searchBtn" class="search-btn" type="button" aria-label="Search">
+                    <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><line x1="16.65" y1="16.65" x2="21" y2="21"></line></svg>
+                    <svg class="refresh-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
+                        <path d="M21 3v5h-5"/>
+                        <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/>
+                        <path d="M8 16H3v5"/>
+                    </svg>
+                </button>
                 <ul id="dropdown" class="dropdown-list"></ul>
             </div>
-            <button id="searchBtn" class="nav-btn" onclick="loadSweaters(false, 'search')">Search</button>
-            
-            <button onclick="changeMode('trending')" class="nav-btn">Trending</button>
-            <button onclick="changeMode('explore')" class="nav-btn">Explore</button>
         </div>
     </header>
 
-    <div class="container">
-        <div class="grid" id="sweaterGrid"></div>
-    </div>
+    <main>
+        <div class="grid-container" id="gridContainer"></div>
+    </main>
 
-    <div id="status" aria-live="polite"></div>
-
-    <button id="themeBtn" class="theme-btn" aria-label="Toggle Dark Mode">
-        <svg class="sun-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
-        <svg class="moon-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+    <button id="backToTop" class="back-to-top" aria-label="Back to Top">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>
     </button>
 
     <script>
         const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
         document.documentElement.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
 
-        let selectedPatternLink = null;
-        let timeout = null;
         const searchInput = document.getElementById('searchInput');
-        const dropdown = document.getElementById('dropdown');
         const searchBtn = document.getElementById('searchBtn');
+        const dropdown = document.getElementById('dropdown');
+        const gridContainer = document.getElementById('gridContainer');
+        const backToTopBtn = document.getElementById('backToTop');
 
-        // Typing triggers suggestions
+        const API_BASE = (function() {
+            const p = window.location.port;
+            if (p === '5500' || p === '5501') return 'http://localhost:8080';
+            return '';
+        })();
+
+        let selectedPatternLink = null;
+        let selectedPatternName = null;
+        let timeout = null;
+
+        // Back-to-top functionality
+        window.addEventListener('scroll', () => {
+            if (window.scrollY > 300) {
+                backToTopBtn.classList.add('visible');
+            } else {
+                backToTopBtn.classList.remove('visible');
+            }
+        });
+
+        backToTopBtn.addEventListener('click', () => {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+
         searchInput.addEventListener('input', (e) => {
             clearTimeout(timeout);
-            selectedPatternLink = null; // Invalidate selection if they type manually
-            searchBtn.disabled = e.target.value.trim().length > 0; // Disable search unless picked from list
-            
+            selectedPatternLink = null;
+
             const query = e.target.value.trim();
-            if (!query) { dropdown.style.display = 'none'; searchBtn.disabled = false; return; }
-            
+            if (!query) {
+                dropdown.style.display = 'none';
+                return;
+            }
+
             timeout = setTimeout(() => fetchSuggestions(query), 300);
         });
 
+        searchInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                searchPatterns();
+            }
+        });
+
+        searchBtn.addEventListener('click', () => searchPatterns());
+
         async function fetchSuggestions(query) {
             try {
-                const res = await fetch(`http://localhost:5000/pattern-search?q=${encodeURIComponent(query)}`);
+                const res = await fetch(`${API_BASE}/pattern-search?q=${encodeURIComponent(query)}`);
                 const data = await res.json();
-                
-                if (data.length === 0) { dropdown.style.display = 'none'; return; }
+
+                if (!Array.isArray(data) || data.length === 0) {
+                    dropdown.style.display = 'none';
+                    return;
+                }
 
                 dropdown.innerHTML = data.map(p => `
                     <li onclick="selectPattern('${p.permalink}', '${p.name.replace(/'/g, "\\'")}')">
@@ -207,107 +573,90 @@
                     </li>
                 `).join('');
                 dropdown.style.display = 'block';
-            } catch (err) { dropdown.style.display = 'none'; }
+            } catch (err) {
+                dropdown.style.display = 'none';
+            }
         }
 
-        // Selection handler
+        async function fetchProjects(patternLink) {
+            try {
+                // Activate search mode - move header to top and enable grid
+                document.body.classList.add('search-active');
+                updateSearchButtonLabel();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+
+                const res = await fetch(`${API_BASE}/pattern-projects?pattern_link=${encodeURIComponent(patternLink)}`);
+                const data = await res.json();
+                displayProjects(data.projects || []);
+            } catch (err) {
+                console.error('Error fetching projects:', err);
+                gridContainer.innerHTML = '<p>Error loading projects</p>';
+            }
+        }
+
+        function displayProjects(projects) {
+            if (!projects || projects.length === 0) {
+                gridContainer.innerHTML = '<p>No projects found</p>';
+                return;
+            }
+
+            const tiles = projects.slice(0, 8).map(p => `
+                <a href="${p.link}" target="_blank" class="tile">
+                    <img src="${p.image}" alt="${p.projectName}">
+                    <div class="tile-info">
+                        <div>${p.projectName}</div>
+                        <div style="font-size: 0.75rem; opacity: 0.9;">by ${p.user}</div>
+                    </div>
+                </a>
+            `).join('');
+
+            gridContainer.innerHTML = tiles;
+        }
+
+        function searchPatterns() {
+            const query = searchInput.value.trim();
+            if (!query) return;
+
+            if (selectedPatternLink) {
+                fetchProjects(selectedPatternLink);
+                return;
+            }
+
+            fetchSuggestions(query);
+        }
+
         window.selectPattern = function(permalink, name) {
             selectedPatternLink = permalink;
+            selectedPatternName = name;
             searchInput.value = name;
             dropdown.style.display = 'none';
-            searchBtn.disabled = false; // Re-enable button
-            loadSweaters(); // Auto-search on select
+            fetchProjects(permalink);
         };
 
-        // Close dropdown when clicking outside
         document.addEventListener('click', (e) => {
             if (!e.target.closest('.autocomplete-wrapper')) dropdown.style.display = 'none';
         });
 
-        async function changeMode(mode) {
-            // Clear search data if switching to global modes
-            if (mode !== 'search') {
-                selectedPatternLink = null;
-                searchInput.value = "";
-            }
-            
-            // UI feedback: highlight active button
-            document.querySelectorAll('.nav-btn').forEach(btn => {
-                btn.classList.toggle('active', btn.innerText.toLowerCase() === mode);
-            });
-
-            await loadSweaters(false, mode);
+        const themeBtn = document.getElementById('themeBtn');
+        function updateThemeLabel() {
+            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+            themeBtn.setAttribute('aria-label', isDark ? 'Switch to light mode' : 'Switch to dark mode');
         }
 
-        async function loadSweaters(isInitialLoad = false, mode = 'search') {
-            const grid = document.getElementById('sweaterGrid');
-            const status = document.getElementById('status');
-            
-            if (!isInitialLoad && searchInput.value.trim() && !selectedPatternLink) {
-                status.innerText = "PLEASE SELECT A PATTERN FROM THE LIST";
-                return;
-            }
-
-            status.innerText = isInitialLoad ? "DISCOVERING POPULAR PROJECTS..." : "SEARCHING RAVELRY...";
-            grid.style.opacity = "0.5";
-
-            try {
-                const res = await fetch(`http://localhost:5000/pattern-projects?pattern_link=${selectedPatternLink || ''}&mode=${mode}`);
-                const responseData = await res.json();
-                
-                grid.style.opacity = "1";
-
-                // Read the new object structure from the server
-                const data = responseData.projects || responseData;
-
-                if (data.length === 0) {
-                    status.innerText = "NO PROJECTS FOUND.";
-                    grid.innerHTML = "";
-                    return;
-                }
-
-                // Display the total cout in the status bar
-                // Only show the "8 OUT OF X" text if the user has actually picked a pattern
-                const totalText = (selectedPatternLink && responseData.total) 
-                    ? `8 / ${responseData.total.toLocaleString()}`
-                    : "";
-
-                status.innerText = totalText;
-
-                grid.innerHTML = data.map(p => `
-                    <div class="card">
-                        <a href="${p.link}" target="_blank">
-                            <img src="${p.image}" 
-                                alt="${p.projectName}" 
-                                onerror="handleImageError(this)">
-                        </a>
-                        <div class="card-info">
-                            <div class="project-title">${p.projectName}</div>
-                            <div class="user-tag">@${p.user}</div>
-                        </div>
-                    </div>
-                `).join('');
-            } catch (err) {
-                status.innerText = " OFFLINE";
-            }
+        function updateSearchButtonLabel() {
+            const isSearchMode = document.body.classList.contains('search-active');
+            searchBtn.setAttribute('aria-label', isSearchMode ? 'Refresh projects' : 'Search patterns');
         }
 
-        document.getElementById('searchBtn').onclick = () => loadSweaters(false, 'search');
-        document.getElementById('themeBtn').onclick = () => {
+        themeBtn.onclick = () => {
             const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
             document.documentElement.setAttribute('data-theme', isDark ? 'light' : 'dark');
-        };
-        
-        // Final line of the script:
-        searchInput.focus(); // Place the cursor in the search box automatically
-
-        window.handleImageError = function(img) {
-            const card = img.closest('.card');
-            if (card) {
-                card.remove(); // Removes the card completely so the grid reflows
-            }
+            updateThemeLabel();
         };
 
+        updateThemeLabel();
+        updateSearchButtonLabel();
+        searchInput.focus();
     </script>
 </body>
 </html>
