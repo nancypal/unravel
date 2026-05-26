@@ -554,7 +554,13 @@
             }
         });
 
-        searchBtn.addEventListener('click', () => searchPatterns());
+        searchBtn.addEventListener('click', () => {
+            if (document.body.classList.contains('search-active') && selectedPatternLink) {
+                fetchProjects(selectedPatternLink, true); // force new random page
+            } else {
+                searchPatterns();
+            }
+        });
 
         async function fetchSuggestions(query) {
             try {
@@ -578,14 +584,14 @@
             }
         }
 
-        async function fetchProjects(patternLink) {
+        async function fetchProjects(patternLink, forceRefresh = false) {
             try {
-                // Activate search mode - move header to top and enable grid
                 document.body.classList.add('search-active');
                 updateSearchButtonLabel();
                 window.scrollTo({ top: 0, behavior: 'smooth' });
 
-                const res = await fetch(`${API_BASE}/pattern-projects?pattern_link=${encodeURIComponent(patternLink)}`);
+                const url = `${API_BASE}/pattern-projects?pattern_link=${encodeURIComponent(patternLink)}&_=${Date.now()}`;
+                const res = await fetch(url, { cache: 'no-store' });  // force bypass cache
                 const data = await res.json();
                 displayProjects(data.projects || []);
             } catch (err) {
