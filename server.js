@@ -7,10 +7,11 @@ const app = express();
 app.use(cors());
 
 const path = require('path');
-app.use(express.static(path.join(__dirname)));
-
-// Serve index.html at root
+// Serve index.html at root FIRST
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
+
+// Then static files
+app.use(express.static(path.join(__dirname)));
 
 // HELPER: Auth Headers
 const getAuthHeaders = () => {
