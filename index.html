@@ -92,6 +92,58 @@
             grid-row: 1;
         }
 
+        .hint {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            margin-top: -8px;
+            color: var(--muted);
+            font-size: 0.9rem;
+        }
+
+        .hint-text {
+            margin: 0;
+        }
+
+        .examples {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .example-chip {
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            background: var(--surface-strong);
+            color: var(--text);
+            font: inherit;
+            padding: 6px 14px;
+            cursor: pointer;
+            transition: border-color 0.2s ease, color 0.2s ease;
+        }
+
+        .example-chip:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        body.search-active .hint {
+            display: none;
+        }
+
+        html[data-theme="dark"] .example-chip {
+            background: #1f2937;
+            border-color: #374151;
+            color: #f8fafc;
+        }
+
+        html[data-theme="dark"] .example-chip:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
         .logo {
             font-family: 'Tenor Sans', sans-serif;
             font-size: 3rem;
@@ -491,6 +543,15 @@
                 <ul id="dropdown" class="dropdown-list"></ul>
             </div>
         </div>
+        <div class="hint">
+            <p class="hint-text">Type a popular sweater name to see real projects knit from it. Try one:</p>
+            <div class="examples">
+                <button type="button" class="example-chip">Flax</button>
+                <button type="button" class="example-chip">Tegna</button>
+                <button type="button" class="example-chip">Stopover</button>
+                <button type="button" class="example-chip">Ranunculus</button>
+            </div>
+        </div>
     </header>
 
     <main>
@@ -638,6 +699,22 @@
             dropdown.style.display = 'none';
             fetchProjects(permalink);
         };
+
+        document.querySelectorAll('.example-chip').forEach(chip => {
+            chip.addEventListener('click', async () => {
+                const name = chip.textContent;
+                searchInput.value = name;
+                try {
+                    const res = await fetch(`${API_BASE}/pattern-search?q=${encodeURIComponent(name)}`);
+                    const data = await res.json();
+                    if (Array.isArray(data) && data.length) {
+                        selectPattern(data[0].permalink, data[0].name);
+                        return;
+                    }
+                } catch (err) {}
+                fetchSuggestions(name);
+            });
+        });
 
         document.addEventListener('click', (e) => {
             if (!e.target.closest('.autocomplete-wrapper')) dropdown.style.display = 'none';
