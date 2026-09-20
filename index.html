@@ -92,21 +92,18 @@
             grid-row: 1;
         }
 
-        .hint {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 12px;
-            margin-top: -8px;
+        .hint-text {
+            width: min(560px, 100%);
+            text-align: left;
+            padding-left: 10px;
+            margin: -16px 0 -42px;
             color: var(--muted);
             font-size: 0.9rem;
         }
 
-        .hint-text {
-            margin: 0;
-        }
-
         .examples {
+            width: min(560px, 100%);
+            margin-top: -16px;
             display: flex;
             flex-wrap: wrap;
             justify-content: center;
@@ -129,7 +126,8 @@
             color: var(--accent);
         }
 
-        body.search-active .hint {
+        body.search-active .hint-text,
+        body.search-active .examples {
             display: none;
         }
 
@@ -292,13 +290,23 @@
             pointer-events: auto;
         }
 
+        .result-count {
+            margin: 0 0 6px;
+            font-size: 0.85rem;
+            color: var(--muted);
+        }
+
+        .result-count:empty {
+            display: none;
+        }
+
         .grid-container {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
             grid-template-rows: repeat(2, 1fr);
             gap: 6px;
             width: calc(100vw - 200px);  /* wider — use most of viewport width */
-            height: calc(100vh - 80px);  /* full viewport height minus header */
+            height: calc(100vh - 110px);  /* full viewport height minus header and result count */
             margin: 0 auto;
             padding: 0;
             box-sizing: border-box;
@@ -528,6 +536,7 @@
             <svg class="sun-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
             <svg class="moon-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
         </button>
+        <p class="hint-text">enter a popular knitting pattern to see 8 random projects made from it</p>
         <div class="search-row">
             <div class="autocomplete-wrapper">
                 <input type="text" id="searchInput" placeholder="Search patterns..." autocomplete="off">
@@ -543,18 +552,11 @@
                 <ul id="dropdown" class="dropdown-list"></ul>
             </div>
         </div>
-        <div class="hint">
-            <p class="hint-text">Type a popular sweater name to see real projects knit from it. Try one:</p>
-            <div class="examples">
-                <button type="button" class="example-chip">Flax</button>
-                <button type="button" class="example-chip">Tegna</button>
-                <button type="button" class="example-chip">Stopover</button>
-                <button type="button" class="example-chip">Ranunculus</button>
-            </div>
-        </div>
+        <div class="examples" id="examples"></div>
     </header>
 
     <main>
+        <p class="result-count" id="resultCount"></p>
         <div class="grid-container" id="gridContainer"></div>
     </main>
 
@@ -580,6 +582,7 @@
 
         let selectedPatternLink = null;
         let selectedPatternName = null;
+        let selectedPatternDesigner = null;
         let timeout = null;
 
         // Back-to-top functionality
@@ -634,7 +637,7 @@
                 }
 
                 dropdown.innerHTML = data.map(p => `
-                    <li onclick="selectPattern('${p.permalink}', '${p.name.replace(/'/g, "\\'")}')">
+                    <li onclick="selectPattern('${p.permalink}', '${p.name.replace(/'/g, "\\'")}', '${p.designer.replace(/'/g, "\\'")}')">
                         <span class="dropdown-name">${p.name}</span>
                         <span class="dropdown-designer">by ${p.designer}</span>
                     </li>
@@ -645,16 +648,36 @@
             }
         }
 
+        // The server sends a shuffled pool; refreshes deal the next 8 from it
+        // without a network call, and only re-fetch once the pool runs out.
+        const TILES_PER_VIEW = 8;
+        let deck = [];
+        let deckLink = null;
+        let deckIndex = 0;
+        let deckTotal = 0;
+        const resultCount = document.getElementById('resultCount');
+
         async function fetchProjects(patternLink, forceRefresh = false) {
             try {
                 document.body.classList.add('search-active');
                 updateSearchButtonLabel();
                 window.scrollTo({ top: 0, behavior: 'smooth' });
 
-                const url = `${API_BASE}/pattern-projects?pattern_link=${encodeURIComponent(patternLink)}&_=${Date.now()}`;
-                const res = await fetch(url, { cache: 'no-store' });  // force bypass cache
-                const data = await res.json();
-                displayProjects(data.projects || []);
+                const canReuse = forceRefresh && deckLink === patternLink &&
+                    deck.length - deckIndex >= TILES_PER_VIEW;
+
+                if (!canReuse) {
+                    const url = `${API_BASE}/pattern-projects?pattern_link=${encodeURIComponent(patternLink)}&_=${Date.now()}`;
+                    const res = await fetch(url, { cache: 'no-store' });  // force bypass cache
+                    const data = await res.json();
+                    deck = data.projects || [];
+                    deckTotal = data.total || deck.length;
+                    deckLink = patternLink;
+                    deckIndex = 0;
+                }
+
+                displayProjects(deck.slice(deckIndex, deckIndex + TILES_PER_VIEW));
+                deckIndex += TILES_PER_VIEW;
             } catch (err) {
                 console.error('Error fetching projects:', err);
                 gridContainer.innerHTML = '<p>Error loading projects</p>';
@@ -663,11 +686,19 @@
 
         function displayProjects(projects) {
             if (!projects || projects.length === 0) {
+                resultCount.textContent = '';
                 gridContainer.innerHTML = '<p>No projects found</p>';
                 return;
             }
 
-            const tiles = projects.slice(0, 8).map(p => `
+            let caption = `Showing ${projects.length} of ${deckTotal.toLocaleString()} photo projects`;
+            if (selectedPatternName) {
+                caption += ` made from ${selectedPatternName}`;
+                if (selectedPatternDesigner) caption += ` by ${selectedPatternDesigner}`;
+            }
+            resultCount.textContent = caption;
+
+            const tiles = projects.map(p => `
                 <a href="${p.link}" target="_blank" class="tile">
                     <img src="${p.image}" alt="${p.projectName}">
                     <div class="tile-info">
@@ -692,29 +723,100 @@
             fetchSuggestions(query);
         }
 
-        window.selectPattern = function(permalink, name) {
+        // The chosen pattern lives in the URL (?pattern=...&name=...&designer=...) so
+        // F5 reloads it with new projects and back/forward move between searches.
+        function patternUrl(permalink, name, designer) {
+            const params = new URLSearchParams({ pattern: permalink, name: name || '' });
+            if (designer) params.set('designer', designer);
+            return `?${params}`;
+        }
+
+        window.selectPattern = function(permalink, name, designer, updateHistory = true) {
+            if (updateHistory && permalink !== selectedPatternLink) {
+                history.pushState(null, '', patternUrl(permalink, name, designer));
+            }
             selectedPatternLink = permalink;
             selectedPatternName = name;
+            selectedPatternDesigner = designer;
             searchInput.value = name;
             dropdown.style.display = 'none';
             fetchProjects(permalink);
         };
 
-        document.querySelectorAll('.example-chip').forEach(chip => {
+        function showHome() {
+            document.body.classList.remove('search-active');
+            searchInput.value = '';
+            selectedPatternLink = null;
+            selectedPatternName = null;
+            selectedPatternDesigner = null;
+            gridContainer.innerHTML = '';
+            resultCount.textContent = '';
+            dropdown.style.display = 'none';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            updateSearchButtonLabel();
+            searchInput.focus();
+        }
+
+        // Show whatever the current URL asks for (used on load and back/forward)
+        function showFromUrl() {
+            const params = new URLSearchParams(location.search);
+            const permalink = params.get('pattern');
+            if (permalink) {
+                selectPattern(permalink, params.get('name') || permalink, params.get('designer'), false);
+            } else {
+                showHome();
+            }
+        }
+
+        window.addEventListener('popstate', showFromUrl);
+
+        // Example buttons: random popular patterns from the server, as many as fit
+        // on one row the width of the search bar. Falls back to a fixed list.
+        const examplesEl = document.getElementById('examples');
+        const FALLBACK_EXAMPLES = ['Flax', 'Tegna', 'Stopover', 'Ranunculus'].map(n => ({ label: n, name: n }));
+
+        function makeChip(ex) {
+            const chip = document.createElement('button');
+            chip.type = 'button';
+            chip.className = 'example-chip';
+            chip.textContent = ex.label;
             chip.addEventListener('click', async () => {
-                const name = chip.textContent;
-                searchInput.value = name;
+                if (ex.permalink) {
+                    selectPattern(ex.permalink, ex.name, ex.designer);
+                    return;
+                }
+                searchInput.value = ex.name;
                 try {
-                    const res = await fetch(`${API_BASE}/pattern-search?q=${encodeURIComponent(name)}`);
+                    const res = await fetch(`${API_BASE}/pattern-search?q=${encodeURIComponent(ex.name)}`);
                     const data = await res.json();
                     if (Array.isArray(data) && data.length) {
-                        selectPattern(data[0].permalink, data[0].name);
+                        selectPattern(data[0].permalink, data[0].name, data[0].designer);
                         return;
                     }
                 } catch (err) {}
-                fetchSuggestions(name);
+                fetchSuggestions(ex.name);
             });
-        });
+            return chip;
+        }
+
+        const MAX_EXAMPLES = 12;   // roughly 2-3 rows at search-bar width
+
+        function renderExamples(list) {
+            const picked = [...list].sort(() => Math.random() - 0.5).slice(0, MAX_EXAMPLES);
+            examplesEl.innerHTML = '';
+            picked.forEach(ex => examplesEl.appendChild(makeChip(ex)));
+        }
+
+        async function loadExamples() {
+            let list = [];
+            try {
+                const res = await fetch(`${API_BASE}/popular-patterns`);
+                list = await res.json();
+            } catch (err) {}
+            renderExamples(Array.isArray(list) && list.length >= 4 ? list : FALLBACK_EXAMPLES);
+        }
+
+        (document.fonts ? document.fonts.ready : Promise.resolve()).then(loadExamples);
 
         document.addEventListener('click', (e) => {
             if (!e.target.closest('.autocomplete-wrapper')) dropdown.style.display = 'none';
@@ -738,20 +840,14 @@
         };
 
         document.getElementById('logoBtn').addEventListener('click', () => {
-            document.body.classList.remove('search-active');
-            searchInput.value = '';
-            selectedPatternLink = null;
-            selectedPatternName = null;
-            gridContainer.innerHTML = '';
-            dropdown.style.display = 'none';
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-            updateSearchButtonLabel();
-            searchInput.focus();
+            if (location.search) history.pushState(null, '', location.pathname);
+            showHome();
         });
 
         updateThemeLabel();
         updateSearchButtonLabel();
         searchInput.focus();
+        showFromUrl();
     </script>
 </body>
 </html>

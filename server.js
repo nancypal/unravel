@@ -54,81 +54,155 @@ app.get('/pattern-search', async (req, res) => {
   }
 });
 
-// 2. Project Search Endpoint
-    const lastPageMap = {};  // track last page per pattern
+// HELPER: total photo-projects for a pattern, cached (counts barely change)
+const TOTAL_TTL = 6 * 60 * 60 * 1000;
+const totalCache = new Map();  // permalink -> { total, at }
 
-    app.get('/pattern-projects', async (req, res) => {
-      try {
-        const searchUrl = 'https://api.ravelry.com/projects/search.json';
-        const { pattern_link } = req.query;
+async function getPhotoProjectTotal(permalink) {
+    const hit = totalCache.get(permalink);
+    if (hit && Date.now() - hit.at < TOTAL_TTL) return hit.total;
 
-        const baseParams = { photo: 'yes' };
-        if (pattern_link) baseParams['pattern-link'] = pattern_link;
-
-        // Step 1: Get total count
-        const countRes = await axios.get(searchUrl, {
-          params: { ...baseParams, page_size: 1 },
-          headers: getAuthHeaders()
-        });
-        const totalResults = countRes.data.paginator.results;
-
-        let projects = [];
-
-        if (totalResults <= 100) {
-          // Small pattern — fetch everything and shuffle
-          const response = await axios.get(searchUrl, {
-            params: { ...baseParams, page_size: 100, page: 1 },
-            headers: getAuthHeaders()
-          });
-          projects = response.data.projects;
-
-        } else {
-          // Large pattern — pick 3 truly random offsets spread across the full range
-          const maxPage = Math.ceil(totalResults / 32);
-          const pages = new Set();
-          while (pages.size < 3) {
-            pages.add(Math.floor(Math.random() * maxPage) + 1);
-          }
-
-          const responses = await Promise.all(
-            [...pages].map(page =>
-              axios.get(searchUrl, {
-                params: { ...baseParams, page_size: 32, page },
-                headers: getAuthHeaders()
-              })
-            )
-          );
-          projects = responses.flatMap(r => r.data.projects);
-        }
-
-        // Dedup, map, shuffle, pick 8
-        const seen = new Set();
-        const unique = projects
-          .filter(p => {
-            if (!p.first_photo?.medium_url) return false;
-            if (seen.has(p.first_photo.medium_url)) return false;
-            seen.add(p.first_photo.medium_url);
-            return true;
-          })
-          .map(p => ({
-            user: p.user?.username || 'Unknown',
-            projectName: p.name,
-            image: p.first_photo.medium_url,
-            link: p.user ? `https://www.ravelry.com/projects/${p.user.username}/${p.permalink}` : '#'
-          }));
-
-        const shuffled = shuffle(unique).slice(0, 8);
-
-        res.set('Cache-Control', 'no-store');
-        res.json({ total: totalResults, projects: shuffled });
-
-      } catch (err) {
-        console.error("Project Search Error:", err.message);
-        res.status(500).json({ error: "Server Error" });
-      }
+    const res = await axios.get('https://api.ravelry.com/projects/search.json', {
+        params: { photo: 'yes', 'pattern-link': permalink, page_size: 1 },
+        headers: getAuthHeaders()
     });
+    const total = res.data.paginator.results;
+    totalCache.set(permalink, { total, at: Date.now() });
+    return total;
+}
+
+// 2. Project Search Endpoint
+// Returns a shuffled pool of projects; the browser deals them out 8 at a time.
+const POOL_PAGES = 6;       // random pages sampled for big patterns
+const POOL_PAGE_SIZE = 10;  // small pages = less clustering than 32 neighbours
+
+app.get('/pattern-projects', async (req, res) => {
+  try {
+    const searchUrl = 'https://api.ravelry.com/projects/search.json';
+    const { pattern_link } = req.query;
+    if (!pattern_link) return res.status(400).json({ error: "pattern_link required" });
+
+    const baseParams = { photo: 'yes', 'pattern-link': pattern_link };
+    const totalResults = await getPhotoProjectTotal(pattern_link);
+
+    let projects = [];
+
+    if (totalResults <= 100) {
+      // Small pattern: fetch everything
+      const response = await axios.get(searchUrl, {
+        params: { ...baseParams, page_size: 100, page: 1 },
+        headers: getAuthHeaders()
+      });
+      projects = response.data.projects;
+
+    } else {
+      // Large pattern: sample several small random pages across the full range
+      const maxPage = Math.ceil(totalResults / POOL_PAGE_SIZE);
+      const pages = new Set();
+      while (pages.size < Math.min(POOL_PAGES, maxPage)) {
+        pages.add(Math.floor(Math.random() * maxPage) + 1);
+      }
+
+      const responses = await Promise.all(
+        [...pages].map(page =>
+          axios.get(searchUrl, {
+            params: { ...baseParams, page_size: POOL_PAGE_SIZE, page },
+            headers: getAuthHeaders()
+          })
+        )
+      );
+      projects = responses.flatMap(r => r.data.projects);
+    }
+
+    // Dedup, map, shuffle
+    const seen = new Set();
+    const unique = projects
+      .filter(p => {
+        if (!p.first_photo?.medium_url) return false;
+        if (seen.has(p.first_photo.medium_url)) return false;
+        seen.add(p.first_photo.medium_url);
+        return true;
+      })
+      .map(p => ({
+        user: p.user?.username || 'Unknown',
+        projectName: p.name,
+        image: p.first_photo.medium_url,
+        link: p.user ? `https://www.ravelry.com/projects/${p.user.username}/${p.permalink}` : '#'
+      }));
+
+    res.set('Cache-Control', 'no-store');
+    res.json({ total: totalResults, projects: shuffle(unique) });
+
+  } catch (err) {
+    console.error("Project Search Error:", err.message);
+    res.status(500).json({ error: "Server Error" });
+  }
+});
+
+// 3. Popular Patterns (for the example buttons)
+const MIN_PHOTO_PROJECTS = 100;   // enough for several different refreshes
+const MAX_LABEL_LENGTH = 24;
+const POPULAR_TTL = 24 * 60 * 60 * 1000;
+const TRAILING_WORDS = /\s+(worsted|dk)$/i;   // yarn-weight variants only, so "Flax DK"/"Flax worsted" merge
+
+let popularCache = { list: [], at: 0 };
+let popularBuilding = null;
+
+function makeLabel(name) {
+    if (!/^[A-Za-z' -]+$/.test(name)) return null;   // skip digits/symbols
+    if (/\bsocks?\b/i.test(name)) return null;
+    const label = name.replace(TRAILING_WORDS, '').trim();
+    if (label.length < 3 || label.length > MAX_LABEL_LENGTH) return null;
+    return label;
+}
+
+async function buildPopularList() {
+    const byLabel = new Map();
+    const candidates = new Map();
+
+    for (const sort of ['popularity', 'recently-popular']) {
+        for (const page of [1, 2]) {
+            const r = await axios.get('https://api.ravelry.com/patterns/search.json', {
+                params: { craft: 'knitting', pc: 'clothing', sort, page_size: 30, page },
+                headers: getAuthHeaders()
+            });
+            r.data.patterns.forEach(p => candidates.set(p.permalink, { name: p.name, designer: p.designer ? p.designer.name : 'Unknown' }));
+        }
+    }
+
+    const entries = [...candidates].filter(([, p]) => makeLabel(p.name));
+    for (let i = 0; i < entries.length; i += 5) {   // small batches, be gentle on the API
+        await Promise.all(entries.slice(i, i + 5).map(async ([permalink, { name, designer }]) => {
+            const total = await getPhotoProjectTotal(permalink);
+            if (total < MIN_PHOTO_PROJECTS) return;
+            const label = makeLabel(name);
+            const prev = byLabel.get(label.toLowerCase());
+            if (!prev || total > prev.total) {   // "Flax DK"/"Flax worsted" -> keep the biggest
+                byLabel.set(label.toLowerCase(), { permalink, name, designer, label, total });
+            }
+        }));
+    }
+
+    return [...byLabel.values()].map(({ permalink, name, designer, label }) => ({ permalink, name, designer, label }));
+}
+
+function refreshPopular() {
+    if (popularBuilding) return popularBuilding;
+    popularBuilding = buildPopularList()
+        .then(list => { if (list.length) popularCache = { list, at: Date.now() }; })
+        .catch(err => console.error("Popular Patterns Error:", err.message))
+        .finally(() => { popularBuilding = null; });
+    return popularBuilding;
+}
+
+// Never blocks: serves the cached list (empty until the first build finishes)
+app.get('/popular-patterns', (req, res) => {
+    if (Date.now() - popularCache.at > POPULAR_TTL) refreshPopular();
+    res.json(popularCache.list);
+});
 
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on port ${PORT}`);
+  refreshPopular();  // warm the example-button list
 });
