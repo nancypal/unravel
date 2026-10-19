@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>UNRAVEL</title>
     <link href="https://fonts.googleapis.com/css2?family=Tenor+Sans&family=Inter:wght@400;600&display=swap" rel="stylesheet">
     <style>
@@ -489,42 +490,105 @@
             background: #1f2937;
         }
 
-        @media (max-width: 720px) {
-            body {
-                padding: 18px;
+        /* Touch screens have no hover: always show tile captions, skip the lift */
+        @media (hover: none) {
+            .tile-info {
+                opacity: 1;
             }
 
-            body.search-active header {
-                padding: 16px 18px;
+            .tile:hover {
+                transform: none;
+            }
+        }
+
+        @media (max-width: 720px) {
+            body {
+                padding: 18vh 16px 24px;
+            }
+
+            header {
+                gap: 28px;
             }
 
             .logo {
-                font-size: 2rem;
+                font-size: 2.2rem;
+                letter-spacing: 0.18em;
+            }
+
+            .hint-text {
+                text-align: center;
+                padding-left: 0;
+                margin: -8px 0 -16px;
+            }
+
+            .examples {
+                margin-top: -8px;
+            }
+
+            /* 16px stops iOS from zooming in when the input is focused */
+            input {
+                font-size: 16px;
+            }
+
+            .dropdown-designer {
+                flex-shrink: 1;
+                min-width: 0;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+
+            /* Results header: logo on top, full-width search below */
+            body.search-active header {
+                grid-template-columns: 1fr;
+                padding: 10px 16px;
+                gap: 8px;
             }
 
             body.search-active .logo {
-                font-size: 1.5rem;
+                font-size: 1.4rem;
+                justify-self: center;
+            }
+
+            body.search-active .search-row {
+                grid-column: 1;
             }
 
             body.search-active main {
-                padding: 24px 18px;
+                padding: 12px 16px 96px;
+                overflow: visible;
             }
 
+            /* Two columns of square tiles that scroll, instead of a fixed-height 4x2 grid */
             .grid-container {
-                grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-                row-gap: 8px;
-                column-gap: 15px;
+                grid-template-columns: repeat(2, 1fr);
+                grid-template-rows: none;
+                gap: 10px;
+                width: 100%;
+                height: auto;
+            }
+
+            .tile {
+                aspect-ratio: 1 / 1;
+                height: auto;
+            }
+
+            .tile-info {
+                padding: 8px 10px;
+                font-size: 0.8rem;
             }
 
             .theme-btn {
+                right: 16px;
+                bottom: 16px;
                 width: 48px;
                 height: 48px;
             }
 
             .back-to-top {
+                right: 16px;
+                bottom: 76px;
                 width: 48px;
                 height: 48px;
-                bottom: 90px;
             }
         }
     </style>
@@ -573,6 +637,11 @@
         const dropdown = document.getElementById('dropdown');
         const gridContainer = document.getElementById('gridContainer');
         const backToTopBtn = document.getElementById('backToTop');
+
+        // Skip autofocus on touch devices so the keyboard does not pop up on load
+        function focusSearch() {
+            if (window.matchMedia('(hover: hover)').matches) searchInput.focus();
+        }
 
         const API_BASE = (function() {
             const p = window.location.port;
@@ -754,7 +823,7 @@
             dropdown.style.display = 'none';
             window.scrollTo({ top: 0, behavior: 'smooth' });
             updateSearchButtonLabel();
-            searchInput.focus();
+            focusSearch();
         }
 
         // Show whatever the current URL asks for (used on load and back/forward)
@@ -846,7 +915,7 @@
 
         updateThemeLabel();
         updateSearchButtonLabel();
-        searchInput.focus();
+        focusSearch();
         showFromUrl();
     </script>
 </body>
