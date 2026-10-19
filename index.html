@@ -558,11 +558,11 @@
                 overflow: visible;
             }
 
-            /* Two columns of square tiles that scroll, instead of a fixed-height 4x2 grid */
+            /* One full-width square tile per row that scrolls, like a photo feed */
             .grid-container {
-                grid-template-columns: repeat(2, 1fr);
+                grid-template-columns: 1fr;
                 grid-template-rows: none;
-                gap: 10px;
+                gap: 16px;
                 width: 100%;
                 height: auto;
             }
@@ -573,8 +573,8 @@
             }
 
             .tile-info {
-                padding: 8px 10px;
-                font-size: 0.8rem;
+                padding: 14px 16px;
+                font-size: 0.95rem;
             }
 
             .theme-btn {
