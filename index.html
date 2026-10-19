@@ -301,6 +301,13 @@
             display: none;
         }
 
+        /* Lives in the sticky header so it stays visible while scrolling */
+        body.search-active .result-count {
+            grid-column: 1 / -1;
+            grid-row: 2;
+            margin: 0;
+        }
+
         .grid-container {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
@@ -549,13 +556,50 @@
                 justify-self: center;
             }
 
+            /* Results search bar sits at the bottom so refresh is in thumb reach */
             body.search-active .search-row {
-                grid-column: 1;
+                position: fixed;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                z-index: 45;
+                max-width: none;
+                padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+                background: var(--bg);
+                box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.05);
+            }
+
+            html[data-theme="dark"] body.search-active .search-row {
+                background: #111827;
+                box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.3);
+            }
+
+            body.search-active .autocomplete-wrapper {
+                width: 100%;
+            }
+
+            /* Suggestions open upward from the bottom bar */
+            body.search-active .dropdown-list {
+                top: auto;
+                bottom: calc(100% + 8px);
+                max-height: 50vh;
+            }
+
+            body.search-active .result-count {
+                font-size: 0.8rem;
             }
 
             body.search-active main {
-                padding: 12px 16px 96px;
+                padding: 12px 16px 90px;
                 overflow: visible;
+            }
+
+            body.search-active .theme-btn {
+                bottom: 84px;
+            }
+
+            body.search-active .back-to-top {
+                bottom: 144px;
             }
 
             /* One full-width square tile per row that scrolls, like a photo feed */
@@ -617,10 +661,10 @@
             </div>
         </div>
         <div class="examples" id="examples"></div>
+        <p class="result-count" id="resultCount"></p>
     </header>
 
     <main>
-        <p class="result-count" id="resultCount"></p>
         <div class="grid-container" id="gridContainer"></div>
     </main>
 
