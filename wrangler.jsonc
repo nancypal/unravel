@@ -1,0 +1,19 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "swatchfirst",
+  "main": "src/worker.js",
+  "compatibility_date": "2026-10-01",
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS",
+    "run_worker_first": true
+  },
+  "routes": [
+    { "pattern": "swatchfirst.com", "custom_domain": true },
+    { "pattern": "www.swatchfirst.com", "custom_domain": true }
+  ],
+  "observability": { "enabled": true }
+  // Secrets (not in this file): RAVELRY_USER, RAVELRY_PASSWORD
+  //   production: npx wrangler secret put RAVELRY_USER
+  //   local dev:  .dev.vars
+}

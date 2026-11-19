@@ -1,23 +1,16 @@
 {
-  "name": "ravelry-site",
+  "name": "swatchfirst",
   "version": "1.0.0",
-  "description": "",
-  "main": "server.js",
+  "description": "See real finished projects for any knitting or crochet pattern before you start",
   "scripts": {
-  "start": "node server.js",
-  "dev": "nodemon server.js"
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "commonjs",
-  "dependencies": {
-    "axios": "^1.15.0",
-    "cors": "^2.8.6",
-    "dotenv": "^17.4.2",
-    "express": "^5.2.1"
-  },
   "devDependencies": {
-    "nodemon": "^3.1.14"
-  }
+    "wrangler": "^4.165.0"
+  },
+  "private": true
 }

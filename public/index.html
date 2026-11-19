@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>UNRAVEL</title>
+    <title>Swatch First</title>
+    <meta name="description" content="See real finished projects for any knitting or crochet pattern before you start.">
     <link href="https://fonts.googleapis.com/css2?family=Tenor+Sans&family=Inter:wght@400;600&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -156,7 +157,8 @@
         }
 
         body.search-active .logo {
-            font-size: 2rem;
+            font-size: 1.6rem;
+            letter-spacing: 0.16em;
         }
 
         main {
@@ -335,6 +337,11 @@
             margin: 0 auto;
             padding: 0;
             box-sizing: border-box;
+        }
+
+        /* Empty on the home page; without this it still takes a full screen of height */
+        body:not(.search-active) .grid-container {
+            display: none;
         }
 
         .tile {
@@ -535,8 +542,8 @@
             }
 
             .logo {
-                font-size: 2.2rem;
-                letter-spacing: 0.18em;
+                font-size: 1.9rem;
+                letter-spacing: 0.12em;
             }
 
             .hint-text {
@@ -569,7 +576,8 @@
             }
 
             body.search-active .logo {
-                font-size: 1.4rem;
+                font-size: 1.3rem;
+                letter-spacing: 0.12em;
                 justify-self: center;
             }
 
@@ -659,16 +667,62 @@
                 height: 48px;
             }
         }
+        .site-footer {
+            margin-top: auto;
+            padding: 16px 16px 12px;
+            font-size: 0.75rem;
+            line-height: 1.5;
+            color: var(--muted);
+            text-align: center;
+        }
+
+        .site-footer a {
+            color: inherit;
+        }
+
+        .site-footer summary {
+            cursor: pointer;
+            text-decoration: underline;
+            display: inline;
+        }
+
+        .site-footer > p,
+        .site-footer details {
+            display: inline;
+            margin: 0;
+        }
+
+        .site-footer details[open] {
+            display: block;
+            margin-top: 6px;
+        }
+
+        .site-footer details p {
+            max-width: 640px;
+            margin: 6px auto 0;
+            text-align: left;
+        }
+
+        body.search-active .site-footer {
+            align-self: center;
+        }
+
+        @media (max-width: 720px) {
+            /* keep it above the fixed bottom search bar */
+            body.search-active .site-footer {
+                padding-bottom: calc(var(--bar-h, 90px) + 16px);
+            }
+        }
     </style>
 </head>
 <body>
     <header>
-        <div class="logo" id="logoBtn" style="cursor:pointer">UN<span class="logo-highlight">R</span>AVEL</div>
+        <div class="logo" id="logoBtn" style="cursor:pointer">SWATCH<span class="logo-highlight">FIRST</span></div>
         <button id="themeBtn" class="theme-btn" aria-label="Toggle Dark Mode">
             <svg class="sun-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
             <svg class="moon-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
         </button>
-        <p class="hint-text">enter a popular knitting pattern to see 8 random projects made from it</p>
+        <p class="hint-text">enter a popular knitting or crochet pattern to see 8 random projects made from it</p>
         <div class="search-row">
             <div class="autocomplete-wrapper">
                 <input type="text" id="searchInput" placeholder="Search patterns..." autocomplete="off">
@@ -691,6 +745,19 @@
     <main>
         <div class="grid-container" id="gridContainer"></div>
     </main>
+
+    <footer class="site-footer">
+        <p>Swatch First is an independent project and is not affiliated with or endorsed by Ravelry.
+            Pattern info and project photos come from <a href="https://www.ravelry.com" target="_blank" rel="noopener">Ravelry</a> through its API and belong to their makers. ·</p>
+        <details>
+            <summary>Privacy</summary>
+            <p>This site doesn't use accounts or cookies and doesn't collect personal information about you.
+                When you search, the server asks Ravelry for matching patterns and projects and passes the results to your browser.
+                It keeps only short-lived, in-memory counts (like how many photo projects a pattern has) so it doesn't ask Ravelry the same thing repeatedly; nothing is saved permanently.
+                Clicking a photo, pattern or designer takes you to that page on Ravelry.
+                Like most websites, the hosting provider may keep standard server logs (such as IP addresses), and fonts load from Google Fonts.</p>
+        </details>
+    </footer>
 
     <button id="backToTop" class="back-to-top" aria-label="Back to Top">
         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>
