@@ -44,7 +44,8 @@ app.get('/pattern-search', async (req, res) => {
     const suggestions = response.data.patterns.map(p => ({
       permalink: p.permalink,
       name: p.name,
-      designer: p.designer ? p.designer.name : 'Unknown'
+      designer: p.designer ? p.designer.name : 'Unknown',
+      designerLink: p.designer ? p.designer.permalink : null
     }));
 
     res.json(suggestions);
@@ -166,24 +167,24 @@ async function buildPopularList() {
                 params: { craft: 'knitting', pc: 'clothing', sort, page_size: 30, page },
                 headers: getAuthHeaders()
             });
-            r.data.patterns.forEach(p => candidates.set(p.permalink, { name: p.name, designer: p.designer ? p.designer.name : 'Unknown' }));
+            r.data.patterns.forEach(p => candidates.set(p.permalink, { name: p.name, designer: p.designer ? p.designer.name : 'Unknown', designerLink: p.designer ? p.designer.permalink : null }));
         }
     }
 
     const entries = [...candidates].filter(([, p]) => makeLabel(p.name));
     for (let i = 0; i < entries.length; i += 5) {   // small batches, be gentle on the API
-        await Promise.all(entries.slice(i, i + 5).map(async ([permalink, { name, designer }]) => {
+        await Promise.all(entries.slice(i, i + 5).map(async ([permalink, { name, designer, designerLink }]) => {
             const total = await getPhotoProjectTotal(permalink);
             if (total < MIN_PHOTO_PROJECTS) return;
             const label = makeLabel(name);
             const prev = byLabel.get(label.toLowerCase());
             if (!prev || total > prev.total) {   // "Flax DK"/"Flax worsted" -> keep the biggest
-                byLabel.set(label.toLowerCase(), { permalink, name, designer, label, total });
+                byLabel.set(label.toLowerCase(), { permalink, name, designer, designerLink, label, total });
             }
         }));
     }
 
-    return [...byLabel.values()].map(({ permalink, name, designer, label }) => ({ permalink, name, designer, label }));
+    return [...byLabel.values()].map(({ permalink, name, designer, designerLink, label }) => ({ permalink, name, designer, designerLink, label }));
 }
 
 function refreshPopular() {
